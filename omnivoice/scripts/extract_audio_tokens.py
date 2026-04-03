@@ -447,7 +447,7 @@ def main() -> None:
     # Determine output directory from tar_output_pattern
     output_dir = Path(tar_output_pattern).parent.parent
     error_log_path = str(output_dir / "errors.jsonl")
-    manifest_path = str(output_dir / "data.lst")
+    manifest_path = str(Path(output_dir) / (Path(args.input_jsonl).stem + ".lst"))
 
     # Setup error logger (writes to errors.jsonl)
     error_logger = logging.getLogger("error_log")
