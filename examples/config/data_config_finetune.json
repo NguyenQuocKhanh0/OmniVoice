@@ -9,10 +9,10 @@
     ],
     "dev": [
         {
-            "manifest_path": ["data/finetune/tokens/dev/data1.lst"]
+            "manifest_path": ["data/finetune/tokens/dev/dev0.lst"]
         },
         {
-            "manifest_path": ["data/finetune/tokens/dev/data0.lst"]
+            "manifest_path": ["data/finetune/tokens/dev/dev1.lst"]
         }
     ]
 }
