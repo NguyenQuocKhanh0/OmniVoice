@@ -19,7 +19,7 @@
     "learning_rate": 5e-5,
     "weight_decay": 0.01,
     "max_grad_norm": 1.0,
-    "steps": 5000,
+    "steps": 100000,
     "seed": 42,
     "warmup_type": "ratio",
     "warmup_ratio": 0.01,
@@ -27,7 +27,7 @@
 
     "batch_tokens": 8192,
     "gradient_accumulation_steps": 1,
-    "num_workers": 2,
+    "num_workers": 8,
 
     "mixed_precision": "bf16",
     "allow_tf32": true,
