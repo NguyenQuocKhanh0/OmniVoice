@@ -13,7 +13,7 @@
     "instruct_ratio": 0.0,
     "only_instruct_ratio": 0.0,
 
-    "resume_from_checkpoint": null,
+    "resume_from_checkpoint": /root/OmniVoice/exp/omnivoice_finetune/checkpoint-19500,
     "init_from_checkpoint": "k2-fsa/OmniVoice",
 
     "learning_rate": 5e-5,
