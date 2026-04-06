@@ -38,6 +38,9 @@ from transformers import (
     get_cosine_schedule_with_warmup,
     get_constant_schedule_with_warmup,
 )
+from huggingface_hub import HfApi
+import os
+
 
 from omnivoice.training.checkpoint import TrainLogger, load_checkpoint
 from omnivoice.training.checkpoint import save_checkpoint as engine_save_checkpoint
@@ -184,6 +187,7 @@ class OmniTrainer:
             )
         return optimizer, lr_scheduler
 
+
     def save_checkpoint(self, step):
         """Wrapper for engine save_checkpoint."""
         engine_save_checkpoint(
@@ -194,11 +198,38 @@ class OmniTrainer:
             step,
             self.config.keep_last_n_checkpoints,
         )
-        # Save config copy for convenience
-        if self.accelerator.is_main_process and hasattr(self.config, "save_to_json"):
+    
+        if self.accelerator.is_main_process:
             checkpoint_dir = os.path.join(self.config.output_dir, f"checkpoint-{step}")
-            self.config.save_to_json(os.path.join(checkpoint_dir, "train_config.json"))
-
+    
+            # Save config
+            if hasattr(self.config, "save_to_json"):
+                self.config.save_to_json(
+                    os.path.join(checkpoint_dir, "train_config.json")
+                )
+    
+            # ===== PUSH TO HUGGINGFACE =====
+            api = HfApi(token=os.environ["HF_TOKEN"])
+    
+            repo_id = "meandyou200175/omn_finetune"
+    
+            # upload checkpoint folder
+            api.upload_folder(
+                folder_path=checkpoint_dir,
+                path_in_repo=f"checkpoint-last",
+                repo_id=repo_id,
+                repo_type="dataset",
+            )
+    
+            # upload log (optional)
+            log_path = os.path.join(self.config.output_dir, "train.log")
+            if os.path.exists(log_path):
+                api.upload_file(
+                    path_or_fileobj=log_path,
+                    path_in_repo="train.log",
+                    repo_id=repo_id,
+                    repo_type="dataset",
+                )
     def load_checkpoint(self, checkpoint_path):
         """Wrapper for loading."""
         step = load_checkpoint(self.accelerator, checkpoint_path)
