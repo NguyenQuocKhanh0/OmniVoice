@@ -209,27 +209,54 @@ class OmniTrainer:
                 )
     
             # ===== PUSH TO HUGGINGFACE =====
-            api = HfApi(token=os.environ["HF_TOKEN"])
-    
-            repo_id = "meandyou200175/omn_finetune"
-    
-            # upload checkpoint folder
-            api.upload_folder(
-                folder_path=checkpoint_dir,
-                path_in_repo=f"checkpoint-last",
-                repo_id=repo_id,
-                repo_type="dataset",
-            )
-    
-            # upload log (optional)
-            log_path = os.path.join(self.config.output_dir, "train.log")
-            if os.path.exists(log_path):
-                api.upload_file(
-                    path_or_fileobj=log_path,
-                    path_in_repo="train.log",
+            try:
+                api = HfApi(token=os.environ["HF_TOKEN"])
+        
+                repo_id = "meandyou200175/omn_finetune"
+                
+                # upload checkpoint folder
+                api.upload_folder(
+                    folder_path=checkpoint_dir,
+                    path_in_repo=f"checkpoint-last",
                     repo_id=repo_id,
                     repo_type="dataset",
                 )
+        
+                # upload log (optional)
+                log_path = os.path.join(self.config.output_dir, "train.log")
+                if os.path.exists(log_path):
+                    api.upload_file(
+                        path_or_fileobj=log_path,
+                        path_in_repo="train.log",
+                        repo_id=repo_id,
+                        repo_type="dataset",
+                    )
+            except Exception as e:
+                print(f"[WARN] Upload failed: {e}")
+                try:
+                    api = HfApi(token=os.environ["HF_TOKEN"])
+            
+                    repo_id = "meandyou200175/omn_finetune"
+                    
+                    # upload checkpoint folder
+                    api.upload_folder(
+                        folder_path=checkpoint_dir,
+                        path_in_repo=f"checkpoint-last",
+                        repo_id=repo_id,
+                        repo_type="dataset",
+                    )
+            
+                    # upload log (optional)
+                    log_path = os.path.join(self.config.output_dir, "train.log")
+                    if os.path.exists(log_path):
+                        api.upload_file(
+                            path_or_fileobj=log_path,
+                            path_in_repo="train.log",
+                            repo_id=repo_id,
+                            repo_type="dataset",
+                        )
+                except Exception as e:
+                    print(f"[WARN] Upload failed: {e}")
     def load_checkpoint(self, checkpoint_path):
         """Wrapper for loading."""
         step = load_checkpoint(self.accelerator, checkpoint_path)
