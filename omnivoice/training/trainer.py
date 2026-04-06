@@ -215,7 +215,7 @@ class OmniTrainer:
                 repo_id = "meandyou200175/omn_finetune"
                 
                 # upload checkpoint folder
-                api.upload_large_folder(
+                api.upload_folder(
                     folder_path=checkpoint_dir,
                     path_in_repo=f"checkpoint-last",
                     repo_id=repo_id,
@@ -239,7 +239,7 @@ class OmniTrainer:
                     repo_id = "meandyou200175/omn_finetune"
                     
                     # upload checkpoint folder
-                    api.upload_large_folder(
+                    api.upload_folder(
                         folder_path=checkpoint_dir,
                         path_in_repo=f"checkpoint-last",
                         repo_id=repo_id,
