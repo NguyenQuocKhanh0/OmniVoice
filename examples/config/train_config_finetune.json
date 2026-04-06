@@ -19,7 +19,7 @@
     "learning_rate": 5e-5,
     "weight_decay": 0.01,
     "max_grad_norm": 1.0,
-    "steps": 800000,
+    "steps": 700000,
     "seed": 42,
     "warmup_type": "ratio",
     "warmup_ratio": 0.01,
