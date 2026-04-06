@@ -164,17 +164,43 @@ def save_checkpoint(
                 logger.info(f"Removed old checkpoint {d}")
 
 
-def load_checkpoint(accelerator: Accelerator, checkpoint_path: str):
+import os
+import re
+
+def load_checkpoint(accelerator, checkpoint_path: str):
     """
     Resumes training state.
+    Nếu truyền checkpoint-last → tự động resolve sang checkpoint-{max_step}
     """
-    logger.info(f"Resuming from {checkpoint_path}")
+    original_path = checkpoint_path
+
+    # 1. Nếu là checkpoint-last → tìm checkpoint lớn nhất
+    if os.path.basename(os.path.normpath(checkpoint_path)) == "checkpoint-last":
+        parent_dir = os.path.dirname(os.path.normpath(checkpoint_path))
+
+        max_step = -1
+        best_ckpt = None
+
+        for name in os.listdir(parent_dir):
+            match = re.match(r"checkpoint-(\d+)", name)
+            if match:
+                step = int(match.group(1))
+                if step > max_step:
+                    max_step = step
+                    best_ckpt = name
+
+        if best_ckpt is not None:
+            checkpoint_path = os.path.join(parent_dir, best_ckpt)
+        else:
+            raise ValueError(f"Không tìm thấy checkpoint-* trong {parent_dir}")
+
+    # 2. Load checkpoint
+    logger.info(f"Resuming from {checkpoint_path} (input: {original_path})")
     accelerator.load_state(checkpoint_path)
 
-    # Try to infer step
+    # 3. Lấy step
     try:
-        clean_path = os.path.normpath(checkpoint_path)
-        step = int(os.path.basename(clean_path).split("-")[-1])
+        step = int(os.path.basename(os.path.normpath(checkpoint_path)).split("-")[-1])
         return step
     except ValueError:
         return 0
