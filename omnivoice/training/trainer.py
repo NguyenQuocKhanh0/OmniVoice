@@ -212,7 +212,7 @@ class OmniTrainer:
             try:
                 api = HfApi(token=os.environ["HF_TOKEN"])
         
-                repo_id = "meandyou200175/omn_finetune"
+                repo_id = "meandyou200175/omn_finetune_v2"
                 
                 # upload checkpoint folder
                 api.upload_folder(
@@ -236,7 +236,7 @@ class OmniTrainer:
                 try:
                     api = HfApi(token=os.environ["HF_TOKEN"])
             
-                    repo_id = "meandyou200175/omn_finetune"
+                    repo_id = "meandyou200175/omn_finetune_v2"
                     
                     # upload checkpoint folder
                     api.upload_folder(
