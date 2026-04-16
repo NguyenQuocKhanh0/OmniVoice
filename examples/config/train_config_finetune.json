@@ -22,7 +22,7 @@
     "steps": 240000,
     "seed": 42,
     "warmup_type": "ratio",
-    "warmup_ratio": 0.01,
+    "warmup_ratio": 0.02,
     "warmup_steps": 0,
 
     "batch_tokens": 8192,
