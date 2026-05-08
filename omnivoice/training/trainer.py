@@ -72,6 +72,8 @@ class OmniTrainer:
         self.tokenizer = tokenizer
         self.train_dataloader = train_dataloader
         self.eval_dataloader = eval_dataloader
+        self.api_huggingface = HfApi(token=os.environ["HF_TOKEN"])
+        self.last_upload_future = None
 
         # 1. Initialize Accelerator
         self.accelerator = self._init_accelerator()
@@ -202,61 +204,54 @@ class OmniTrainer:
         if self.accelerator.is_main_process:
             checkpoint_dir = os.path.join(self.config.output_dir, f"checkpoint-{step}")
     
-            # Save config
             if hasattr(self.config, "save_to_json"):
                 self.config.save_to_json(
                     os.path.join(checkpoint_dir, "train_config.json")
                 )
     
-            # ===== PUSH TO HUGGINGFACE =====
             try:
-                api = HfApi(token=os.environ["HF_TOKEN"])
-        
+                # api = self.api_huggingface
                 repo_id = "meandyou200175/omn_finetune_v3"
-                
-                # upload checkpoint folder
-                api.upload_folder(
+    
+                if not hasattr(self, "last_upload_future"):
+                    self.last_upload_future = None
+    
+                # xử lý upload cũ
+                if self.last_upload_future is not None:
+                    if self.last_upload_future.done():
+                        try:
+                            self.last_upload_future.result()
+                        except Exception as e:
+                            print(f"[WARN] Previous upload failed, ignore it: {e}")
+                    else:
+                        cancelled = self.last_upload_future.cancel()
+                        if cancelled:
+                            print("[WARN] Previous upload was pending, cancelled it.")
+                        else:
+                            print("[WARN] Previous upload is already running, ignore it and start new upload.")
+    
+                # upload checkpoint mới
+                self.last_upload_future = self.api_huggingface.upload_folder(
                     folder_path=checkpoint_dir,
-                    path_in_repo=f"checkpoint-last",
+                    path_in_repo="checkpoint-last",
                     repo_id=repo_id,
                     repo_type="dataset",
+                    run_as_future=True,
                 )
-        
-                # upload log (optional)
+    
+                # upload log riêng, không cần giữ cũng được
                 log_path = os.path.join(self.config.output_dir, "train.log")
                 if os.path.exists(log_path):
-                    api.upload_file(
+                    self.api_huggingface.upload_file(
                         path_or_fileobj=log_path,
                         path_in_repo="train.log",
                         repo_id=repo_id,
                         repo_type="dataset",
+                        run_as_future=True,
                     )
+    
             except Exception as e:
-                print(f"[WARN] Upload failed: {e}")
-                try:
-                    api = HfApi(token=os.environ["HF_TOKEN"])
-            
-                    repo_id = "meandyou200175/omn_finetune_v3"
-                    
-                    # upload checkpoint folder
-                    api.upload_folder(
-                        folder_path=checkpoint_dir,
-                        path_in_repo=f"checkpoint-last",
-                        repo_id=repo_id,
-                        repo_type="dataset",
-                    )
-            
-                    # upload log (optional)
-                    log_path = os.path.join(self.config.output_dir, "train.log")
-                    if os.path.exists(log_path):
-                        api.upload_file(
-                            path_or_fileobj=log_path,
-                            path_in_repo="train.log",
-                            repo_id=repo_id,
-                            repo_type="dataset",
-                        )
-                except Exception as e:
-                    print(f"[WARN] Upload failed: {e}")
+                print(f"[WARN] Failed to start upload: {e}")
     def load_checkpoint(self, checkpoint_path):
         """Wrapper for loading."""
         step = load_checkpoint(self.accelerator, checkpoint_path)
