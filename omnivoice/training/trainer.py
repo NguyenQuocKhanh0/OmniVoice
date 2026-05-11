@@ -211,7 +211,7 @@ class OmniTrainer:
     
             try:
                 # api = self.api_huggingface
-                repo_id = "kjanh/omn_finetune_v3"
+                repo_id = "meandyou200175/omn_finetune_v3"
     
                 if not hasattr(self, "last_upload_future"):
                     self.last_upload_future = None
