@@ -85,11 +85,11 @@ class RuleDurationEstimator:
 
         # Có phân biệt pause tốt hơn code cũ một chút.
         self.punctuation_weights = {
-            ",": 0.75,
+            ",": 1.75,
             "،": 0.35,
             ";": 0.45,
             ":": 0.45,
-            ".": 1.3,
+            ".": 2.5,
             "。": 0.65,
             "?": 0.75,
             "？": 0.75,
