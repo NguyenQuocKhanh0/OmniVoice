@@ -472,16 +472,21 @@ class RuleDurationEstimator:
         speed_factor = ref_weight / ref_duration
         estimated_duration = target_weight / speed_factor
 
-        if low_threshold is not None and estimated_duration < low_threshold:
-            if low_threshold <= 0:
-                return estimated_duration
+        # if low_threshold is not None and estimated_duration < low_threshold:
+        #     if low_threshold <= 0:
+        #         return estimated_duration
 
-            alpha = 1.0 / boost_strength
+        #     alpha = 1.0 / boost_strength
 
-            estimated_duration = low_threshold * (
-                estimated_duration / low_threshold
-            ) ** alpha
-
+        #     estimated_duration = low_threshold * (
+        #         estimated_duration / low_threshold
+        #     ) ** alpha
+        alpha = 1.0 / boost_strength
+        estimated_duration = (
+            low_threshold
+            * (estimated_duration / (low_threshold * 1.2)) ** alpha
+            + 0.12 * estimated_duration**1.2
+        )
         return estimated_duration
 
     def breakdown(
