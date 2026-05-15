@@ -16,9 +16,9 @@ VIETNAMESE_WORD_WEIGHT = 3.0
 
 # Nếu ref_duration đang dùng đơn vị "giây", nên để None hoặc số nhỏ như 0.3 / 0.5.
 # Nếu pipeline của bạn dùng frame và trước đây cần threshold=50 thì đổi lại thành 50.
-LOW_DURATION_THRESHOLD = 50
+LOW_DURATION_THRESHOLD = 100
 
-BOOST_STRENGTH = 1.5
+BOOST_STRENGTH = 1.3
 
 COUNT_SPACE = True
 
@@ -93,11 +93,11 @@ class RuleDurationEstimator:
 
         # Base weight cho từng dấu câu.
         self.punctuation_weights = {
-            ",": 3.0,
+            ",": 3.5,
             "،": 0.35,
             ";": 0.45,
             ":": 0.45,
-            ".": 4.2,
+            ".": 4.5,
             "。": 0.65,
             "?": 0.75,
             "？": 0.75,
