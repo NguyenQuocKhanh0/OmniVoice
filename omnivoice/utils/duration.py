@@ -16,7 +16,7 @@ VIETNAMESE_WORD_WEIGHT = 3.0
 
 # Nếu ref_duration đang dùng đơn vị "giây", nên để None hoặc số nhỏ như 0.3 / 0.5.
 # Nếu pipeline của bạn dùng frame và trước đây cần threshold=50 thì đổi lại thành 50.
-LOW_DURATION_THRESHOLD = 50
+LOW_DURATION_THRESHOLD = None
 
 BOOST_STRENGTH = 3.0
 
@@ -97,7 +97,7 @@ class RuleDurationEstimator:
             "،": 0.35,
             ";": 0.45,
             ":": 0.45,
-            ".": 4.0,
+            ".": 4.3,
             "。": 0.65,
             "?": 0.75,
             "？": 0.75,
