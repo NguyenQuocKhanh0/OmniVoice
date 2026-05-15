@@ -16,15 +16,15 @@ VIETNAMESE_WORD_WEIGHT = 3.0
 
 # Nếu ref_duration đang dùng đơn vị "giây", nên để None hoặc số nhỏ như 0.3 / 0.5.
 # Nếu pipeline của bạn dùng frame và trước đây cần threshold=50 thì đổi lại thành 50.
-LOW_DURATION_THRESHOLD = None
+LOW_DURATION_THRESHOLD = 50
 
-BOOST_STRENGTH = 3.0
+BOOST_STRENGTH = 1.5
 
 COUNT_SPACE = True
 
 # Chỉ áp dụng cộng dồn cho target_text.
 # ref_text vẫn tính dấu câu theo base weight, không tăng theo số lần lặp.
-PUNCTUATION_REPEAT_BOOST = 0.15
+PUNCTUATION_REPEAT_BOOST = 0.1
 
 
 class RuleDurationEstimator:
@@ -97,7 +97,7 @@ class RuleDurationEstimator:
             "،": 0.35,
             ";": 0.45,
             ":": 0.45,
-            ".": 4.3,
+            ".": 4.2,
             "。": 0.65,
             "?": 0.75,
             "？": 0.75,
