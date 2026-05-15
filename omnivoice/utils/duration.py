@@ -16,21 +16,15 @@ VIETNAMESE_WORD_WEIGHT = 3.0
 
 # Nếu ref_duration đang dùng đơn vị "giây", nên để None hoặc số nhỏ như 0.3 / 0.5.
 # Nếu pipeline của bạn dùng frame và trước đây cần threshold=50 thì đổi lại thành 50.
-LOW_DURATION_THRESHOLD = None
+LOW_DURATION_THRESHOLD = 55
 
-BOOST_STRENGTH = 3.0
+BOOST_STRENGTH = 3.5
 
 COUNT_SPACE = True
 
-# Nếu cùng một dấu câu xuất hiện nhiều lần trong cùng một text,
-# weight của dấu câu đó ở lần sau sẽ tăng thêm 10%.
-#
-# Ví dụ dấu "," có base weight = 3.15:
-# - lần 1: 3.15
-# - lần 2: 3.15 * 1.1
-# - lần 3: 3.15 * 1.1^2
-# - lần 4: 3.15 * 1.1^3
-PUNCTUATION_REPEAT_BOOST = 0.15
+# Chỉ áp dụng cộng dồn cho target_text.
+# ref_text vẫn tính dấu câu theo base weight, không tăng theo số lần lặp.
+PUNCTUATION_REPEAT_BOOST = 0.1
 
 
 class RuleDurationEstimator:
@@ -44,8 +38,8 @@ class RuleDurationEstimator:
       Ví dụ: "xin chào" = 2 Vietnamese word units.
     - Non-Latin scripts fallback về rule theo Unicode block.
     - Punctuation vẫn được tính như pause.
-    - Nếu cùng một dấu câu xuất hiện nhiều lần trong cùng một text,
-      weight của dấu câu đó ở các lần sau sẽ tăng dần.
+    - PUNCTUATION_REPEAT_BOOST chỉ áp dụng cho target_text trong estimate_duration().
+      ref_text không cộng dồn punctuation repeat boost.
     """
 
     def __init__(
@@ -82,7 +76,7 @@ class RuleDurationEstimator:
             "hebrew": 1.5,
 
             # Alphabet
-            "latin": 1,
+            "latin": 1.0,
             "cyrillic": 1.0,
             "greek": 1.0,
             "armenian": 1.0,
@@ -98,13 +92,12 @@ class RuleDurationEstimator:
         self.default_punctuation_weight = 0.5
 
         # Base weight cho từng dấu câu.
-        # Weight thực tế có thể tăng nếu dấu câu đó xuất hiện nhiều lần.
         self.punctuation_weights = {
-            ",": 2.75,
+            ",": 3.0,
             "،": 0.35,
             ";": 0.45,
             ":": 0.45,
-            ".": 3.5,
+            ".": 4.3,
             "。": 0.65,
             "?": 0.75,
             "？": 0.75,
@@ -267,7 +260,6 @@ class RuleDurationEstimator:
     def _get_punctuation_weight(self, char: str) -> float:
         """
         Lấy base weight của dấu câu.
-        Hàm này chưa tính boost theo số lần xuất hiện.
         """
         return self.punctuation_weights.get(
             char,
@@ -278,18 +270,25 @@ class RuleDurationEstimator:
         self,
         char: str,
         previous_count: int,
+        apply_repeat_boost: bool = True,
     ) -> float:
         """
-        Tính weight cho dấu câu dựa trên số lần nó đã xuất hiện trước đó.
+        Tính weight cho dấu câu.
 
-        Với punctuation_repeat_boost = 0.10:
-        - previous_count = 0 -> lần 1 -> base_weight
-        - previous_count = 1 -> lần 2 -> base_weight * 1.1
-        - previous_count = 2 -> lần 3 -> base_weight * 1.1^2
+        apply_repeat_boost=True:
+            - previous_count = 0 -> lần 1 -> base_weight
+            - previous_count = 1 -> lần 2 -> base_weight * (1 + boost)
+            - previous_count = 2 -> lần 3 -> base_weight * (1 + boost)^2
+
+        apply_repeat_boost=False:
+            - mọi lần đều dùng base_weight, không cộng dồn.
         """
         base_weight = self._get_punctuation_weight(char)
-        multiplier = (1.0 + self.punctuation_repeat_boost) ** previous_count
 
+        if not apply_repeat_boost:
+            return base_weight
+
+        multiplier = (1.0 + self.punctuation_repeat_boost) ** previous_count
         return base_weight * multiplier
 
     @lru_cache(maxsize=4096)
@@ -349,35 +348,36 @@ class RuleDurationEstimator:
 
     def _calculate_marked_english_word_weight(self, word: str) -> float:
         """
-        English word sau marker vẫn nên tính theo ký tự,
-        vì độ dài từ tiếng Anh ảnh hưởng khá mạnh tới thời lượng.
-
-        Ví dụ:
-        - `a
-        - `internationalization
-
-        không nên có cùng duration.
+        English word sau marker vẫn tính theo ký tự,
+        vì độ dài từ tiếng Anh ảnh hưởng tới thời lượng.
         """
         return sum(self._get_char_weight(char) for char in word)
 
     def _calculate_unmarked_latin_word_weight(self, word: str) -> float:
         """
-        Theo convention của bạn:
+        Theo convention:
         - English words đều có marker ` phía trước.
         - Latin word không có marker được xem là tiếng Việt.
         """
         return self.vietnamese_word_weight
 
-    def calculate_total_weight(self, text: str) -> float:
+    def calculate_total_weight(
+        self,
+        text: str,
+        apply_punctuation_repeat_boost: bool = True,
+    ) -> float:
         """
         Tính tổng weight của text.
 
-        Quy tắc:
-        - `hello -> bỏ `, tính hello theo char-based English.
-        - xin chào -> xin = 1 Vietnamese word, chào = 1 Vietnamese word.
-        - Punctuation/space vẫn được cộng riêng.
-        - Nếu cùng một dấu câu xuất hiện nhiều lần,
-          weight của các lần sau tăng dần theo punctuation_repeat_boost.
+        apply_punctuation_repeat_boost=True:
+            Dấu câu lặp lại được boost dần.
+
+        apply_punctuation_repeat_boost=False:
+            Dấu câu luôn dùng base weight, không cộng dồn.
+
+        Trong estimate_duration():
+            - target_text dùng True
+            - ref_text dùng False
         """
         if not text:
             return 0.0
@@ -413,13 +413,14 @@ class RuleDurationEstimator:
 
                 continue
 
-            # Dấu câu có dynamic weight theo số lần xuất hiện
+            # Dấu câu
             if self._is_punctuation(char):
                 previous_count = punctuation_counts.get(char, 0)
 
                 total_weight += self._get_repeated_punctuation_weight(
                     char=char,
                     previous_count=previous_count,
+                    apply_repeat_boost=apply_punctuation_repeat_boost,
                 )
 
                 punctuation_counts[char] = previous_count + 1
@@ -444,43 +445,31 @@ class RuleDurationEstimator:
         """
         Estimate duration dựa trên reference text/audio.
 
+        Quy tắc mới:
+            - ref_text: không áp dụng PUNCTUATION_REPEAT_BOOST
+            - target_text: có áp dụng PUNCTUATION_REPEAT_BOOST
+
         Công thức:
             speed = ref_weight / ref_duration
             target_duration = target_weight / speed
-
-        Args:
-            target_text:
-                Text cần estimate.
-
-            ref_text:
-                Text reference.
-
-            ref_duration:
-                Duration thật của ref_text.
-
-            low_threshold:
-                - None: không boost duration ngắn.
-                - float: nếu estimated_duration thấp hơn ngưỡng này,
-                  dùng power curve để boost.
-
-            boost_strength:
-                - 1.0: gần tuyến tính.
-                - >1.0: boost mạnh hơn cho câu ngắn.
-
-        Returns:
-            Estimated duration.
         """
         if ref_duration <= 0 or not ref_text:
             return 0.0
 
-        ref_weight = self.calculate_total_weight(ref_text)
+        ref_weight = self.calculate_total_weight(
+            ref_text,
+            apply_punctuation_repeat_boost=False,
+        )
 
         if ref_weight <= 0:
             return 0.0
 
-        target_weight = self.calculate_total_weight(target_text)
-        speed_factor = ref_weight / ref_duration
+        target_weight = self.calculate_total_weight(
+            target_text,
+            apply_punctuation_repeat_boost=True,
+        )
 
+        speed_factor = ref_weight / ref_duration
         estimated_duration = target_weight / speed_factor
 
         if low_threshold is not None and estimated_duration < low_threshold:
@@ -495,14 +484,19 @@ class RuleDurationEstimator:
 
         return estimated_duration
 
-    def breakdown(self, text: str):
+    def breakdown(
+        self,
+        text: str,
+        apply_punctuation_repeat_boost: bool = True,
+    ):
         """
         Debug helper để xem từng token được tính như thế nào.
 
-        Hữu ích để kiểm tra:
-        - Marker ` có bị tính nhầm không.
-        - Dấu câu nào đang được boost.
-        - Dấu câu xuất hiện lần thứ mấy.
+        apply_punctuation_repeat_boost=True:
+            Xem breakdown giống target_text.
+
+        apply_punctuation_repeat_boost=False:
+            Xem breakdown giống ref_text.
         """
         if not text:
             return []
@@ -567,13 +561,18 @@ class RuleDurationEstimator:
                 occurrence = previous_count + 1
 
                 base_weight = self._get_punctuation_weight(char)
-                multiplier = (
-                    1.0 + self.punctuation_repeat_boost
-                ) ** previous_count
+
+                if apply_punctuation_repeat_boost:
+                    multiplier = (
+                        1.0 + self.punctuation_repeat_boost
+                    ) ** previous_count
+                else:
+                    multiplier = 1.0
 
                 weight = self._get_repeated_punctuation_weight(
                     char=char,
                     previous_count=previous_count,
+                    apply_repeat_boost=apply_punctuation_repeat_boost,
                 )
 
                 punctuation_counts[char] = occurrence
