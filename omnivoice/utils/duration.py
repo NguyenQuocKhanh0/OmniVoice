@@ -481,12 +481,18 @@ class RuleDurationEstimator:
         #     estimated_duration = low_threshold * (
         #         estimated_duration / low_threshold
         #     ) ** alpha
-        alpha = 1.0 / boost_strength
-        estimated_duration = (
-            low_threshold
-            * (estimated_duration / (low_threshold * 1.2)) ** alpha
-            + 0.105 * estimated_duration**1.2
-        )
+        alpha = 1.0 / 1.33
+        # print("old estimated_duration:",estimated_duration)
+        if estimated_duration > 7:
+            estimated_duration = (
+                100
+                * (estimated_duration / (low_threshold * 1.25)) ** alpha
+                + 0.047 * estimated_duration**0.91
+                + 0.038 * (estimated_duration - 7) ** 1.4
+            )
+        else:
+            estimated_duration = 20
+        # print("new estimated_duration:",estimated_duration)
         return estimated_duration
 
     def breakdown(
