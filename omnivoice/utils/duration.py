@@ -484,8 +484,8 @@ class RuleDurationEstimator:
         alpha = 1.0 / boost_strength
         estimated_duration = (
             low_threshold
-            * (estimated_duration / (low_threshold * 1.2)) ** alpha
-            + 0.105 * estimated_duration**1.2
+            * (estimated_duration / (low_threshold * 1.215)) ** alpha
+            + 0.125 * estimated_duration**1.26
         )
         return estimated_duration
 
