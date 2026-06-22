@@ -13,8 +13,8 @@
     "instruct_ratio": 0.0,
     "only_instruct_ratio": 0.0,
 
-    "resume_from_checkpoint": "/root/OmniVoice/exp/omnivoice_finetune/checkpoint-last",
-    "init_from_checkpoint": "k2-fsa/OmniVoice",
+    "resume_from_checkpoint": null,
+    "init_from_checkpoint": "kjanh/KhanhTTS-OmniVoice",
 
     "learning_rate": 6e-5,
     "weight_decay": 0.01,
