@@ -676,7 +676,11 @@ LANG_NAME_TO_ID = {
 }
 
 LANG_NAMES = set(LANG_NAME_TO_ID.keys())
-LANG_IDS = set(LANG_NAME_TO_ID.values())
+CUSTOM_LANG_IDS = {
+    "msk",
+}
+
+LANG_IDS = set(LANG_NAME_TO_ID.values()) | CUSTOM_LANG_IDS
 
 # Exceptions where .title() doesn't match the canonical casing from the TSV.
 _TITLE_EXCEPTIONS = {
